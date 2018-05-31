@@ -9,7 +9,7 @@ circle = input().replace(' ', '').split('->')
 
 def calc_amount(am, is_print):
     if is_print:
-        print('Amount:', am , circle[0])
+        print('Amount:', am, circle[0])
     amount = am
     for i in range(len(circle) - 1):
         cur_val = circle[i]
@@ -20,17 +20,17 @@ def calc_amount(am, is_print):
 
         if pair in storage:
             ask_rate, ask_amount, _, _ = storage[pair]
+            amount = min(ask_amount, amount)
             amount *= 1.0 / ask_rate
-            if amount > ask_amount:
-                return 0, False
+
             if is_print:
                 print(pair + ' OK')
 
         elif reverse_pair in storage:
             _, _, bid_rate, bid_amount = storage[reverse_pair]
+
             amount *= bid_rate
-            if amount > bid_amount:
-                return 0, False
+            amount = min(bid_amount, amount)
             if is_print:
                 print(reverse_pair + ' reversed OK')
         else:
@@ -40,7 +40,7 @@ def calc_amount(am, is_print):
         if is_print:
             print('Amount:', amount, next_val)
             print()
-    return amount, True
+    return amount
 
 
 with open('TestData.json', 'r') as file:
@@ -57,17 +57,21 @@ for currency_pair in data:
     storage[currency_pair] = (ask_rate, ask_amount, bid_rate, bid_amount)
 
 
-left = 0
-right = 1e5
+res_amount = calc_amount(1e5, False)
 
-while right - left > 1e-7:
-    mid = (right + left) / 2.0
-    ans, b = calc_amount(mid, False)
-    if b:
-        left = mid
-    else:
-        right = mid
+amount = res_amount
+for i in range(len(circle) - 2, -1, -1):
+    cur_val = circle[i]
+    next_val = circle[i + 1]
 
-res_amount, _ = calc_amount(left, True)
+    pair = cur_val + '_' + next_val
+    reverse_pair = next_val + '_' + cur_val
 
-print('Profit:', res_amount - left)
+    if pair in storage:
+        ask_rate, ask_amount, _, _ = storage[pair]
+        amount /= 1.0 / ask_rate
+    elif reverse_pair in storage:
+        _, _, bid_rate, bid_amount = storage[reverse_pair]
+        amount /= bid_rate
+
+print('Profit:', calc_amount(amount, True) - amount)
